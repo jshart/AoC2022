@@ -1,3 +1,3 @@
- D    
-NC    
+#D#
+NC#
 ZMP
