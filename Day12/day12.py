@@ -13,8 +13,10 @@ def draw(scale, x, y, raw):
         for rowPos in range(x):
             # map the height to a green colour scale, unless its a negative number, which represent the start/end locations
             # which we map to red
-            if raw[colPos][rowPos] < 0:
+            if raw[colPos][rowPos] == -13:  # S
                 color = (255, 0, 0)
+            elif raw[colPos][rowPos] == -27:  # E
+                color = (0,0,255)
             else:
                 color = (0, (255/26)*(raw[colPos][rowPos]), 0)
 
@@ -32,7 +34,7 @@ def draw(scale, x, y, raw):
 
             # Render the temporary surface, and then blit that onto the main surface
             text_surface = myFont.render(
-                str(raw[colPos][rowPos]), False, (255, 0, 0))
+                str(raw[colPos][rowPos]), False, (255, 255, 255))
             surface.blit(text_surface, (rowPos*scale, (colPos*scale)))
 
     # dump the green values, so we can check the heights look sane
@@ -43,7 +45,6 @@ def draw(scale, x, y, raw):
 pygame.init()
 pygame.font.init()
 myFont = pygame.font.SysFont('Arial', 10)
-
 
 
 #### START OF DATA LOADING ####
@@ -87,9 +88,8 @@ for colPos in range(y):
 print("Grid is {},{}".format(x, y))
 
 
-
 # setup the display, now we know how big we need it
-scale = 10
+scale = 12
 surface = pygame.display.set_mode((scale*x, scale*y))
 
 # draw the map in its current state
@@ -98,6 +98,8 @@ draw(scale, x, y, raw)
 # flip the display for double buffering
 pygame.display.flip()
 
+# 83 69
+print("{} {}".format(ord('S')-96, ord('E')-96))
 
 # hold the screen open waiting on a user interaction so we can actually see it
 pygame.event.clear()
