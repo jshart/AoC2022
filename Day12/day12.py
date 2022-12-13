@@ -4,43 +4,46 @@ import pygame
 from pygame.locals import *
 
 
-
 def draw(scale, x, y, raw):
-    count = 0
-    total = 0
 
-    s=set()
+    s = set()
 
     # loop through each cell
     for colPos in range(y):
         for rowPos in range(x):
-            # map the height to a green colour scale - we add one as some squares have a tree height of "zero" which would result in a divide by zero error
-            if raw[colPos][rowPos] <0:
-                color = (255,0,0)
+            # map the height to a green colour scale, unless its a negative number, which represent the start/end locations
+            # which we map to red
+            if raw[colPos][rowPos] < 0:
+                color = (255, 0, 0)
             else:
                 color = (0, (255/26)*(raw[colPos][rowPos]), 0)
 
+            # just for debug purposes capture which Green values we generate
             s.add(255/raw[colPos][rowPos])
-            #print(color)
+            # print(color)
 
-            # draw the tree
+            # draw the map
             pygame.draw.rect(surface, color, pygame.Rect(
                 rowPos*scale, colPos*scale, scale, scale))
 
-            pygame.draw.rect(surface, (10, 10, 10), pygame.Rect(rowPos*scale, colPos*scale, scale, scale), width=1)
+            # draw a rect to highlight the cells and make it a bit easier to see when there are blocks of same height
+            pygame.draw.rect(surface, (10, 10, 10), pygame.Rect(
+                rowPos*scale, colPos*scale, scale, scale), width=1)
 
-            # You can use `render` and then blit the text surface ...
-            text_surface = myFont.render(str(raw[colPos][rowPos]), False, (255,0,0))
-            surface.blit(text_surface,(rowPos*scale,(colPos*scale)))
+            # Render the temporary surface, and then blit that onto the main surface
+            text_surface = myFont.render(
+                str(raw[colPos][rowPos]), False, (255, 0, 0))
+            surface.blit(text_surface, (rowPos*scale, (colPos*scale)))
 
-
+    # dump the green values, so we can check the heights look sane
     print(s)
 
 
-# Initializing Pygame
+# Initializing Pygame and the font handler
 pygame.init()
 pygame.font.init()
 myFont = pygame.font.SysFont('Arial', 10)
+
 
 
 #### START OF DATA LOADING ####
@@ -68,6 +71,10 @@ y = len(raw)
 
 print("Matrix size:{}/{}".format(x, y))
 
+#### END OF DATA LOADING ####
+
+
+# just dump the data we loaded, so we get a chance to visually check it looks ok
 for row in raw:
     print(row)
 
@@ -80,16 +87,19 @@ for colPos in range(y):
 print("Grid is {},{}".format(x, y))
 
 
-# setup the display
+
+# setup the display, now we know how big we need it
 scale = 10
 surface = pygame.display.set_mode((scale*x, scale*y))
 
-draw(scale,x,y,raw)
+# draw the map in its current state
+draw(scale, x, y, raw)
 
 # flip the display for double buffering
 pygame.display.flip()
 
 
+# hold the screen open waiting on a user interaction so we can actually see it
 pygame.event.clear()
 while True:
     event = pygame.event.wait()
