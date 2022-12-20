@@ -122,7 +122,7 @@ for line in Lines:
 # to the nearest 100, and then create a blank
 # array of that size, so that we can just arbitarily
 # populate it as we process data
-x = 700
+x = 600
 y = 200
 map = []
 for i in range(x):
@@ -130,28 +130,14 @@ for i in range(x):
 
 # print(map)
 
-# for part 2 we need to add a floor going across the entire
-# width, 2 cells below the lowest y co-ord, so as we're building
-# the predefined rocks, lets work out what the Y floor needs to be
-# then add an extra rock to form the floor
-largestY = 0
 for r in rocks:
     buildRock(r, map)
-    if (r[0][1] > largestY):
-        largestY = r[0][1]
-
-    if (r[1][1] > largestY):
-        largestY = r[1][1]
-
-print("Largest Y: {}".format(largestY))
-buildRock(((0, largestY+2), (x-1, largestY+2)), map)
 
 # setup the display, now we know how big we need it
 scale = 3
 surface = pygame.display.set_mode((scale*x, scale*y))
 
 
-# comes to rest at the source
 count = 0
 done = False
 # keep pumping in sand
@@ -162,43 +148,30 @@ while done == False:
     while active == True:
         # pygame.time.wait(100)
 
+        surface.fill((0, 0, 0))
+
+        drawMap(scale, x, y, map)
+        drawSource()
+
         active = testSand.CheckNextMove(map)
         if active:
             testSand.draw(scale)
-
-            # for part 2 - we leave the part 1 exit condition
-            # in as a safety belt, but really this is an error
-            # if this fires
             if (testSand.y > 190):
                 active = False
                 done = True
         else:
-
-            surface.fill((0, 0, 0))
-
-            drawMap(scale, x, y, map)
-            drawSource()
-
             map[testSand.x][testSand.y] = 2
             count += 1
             print("Count:{}".format(count))
 
-            # for part 2 our exit condition is when we hit the
-            # source block with sand - i.e. when the pyramid fills
-            # up from the floor all the way up to where the sand
-            # falls from
-            if (testSand.x == 500) and (testSand.y == 0):
-                active = False
-                done = True
-
-            # flip the display for double buffering
-            pygame.display.flip()
+        # flip the display for double buffering
+        pygame.display.flip()
 
 print("Done")
 
 pygame.event.clear()
 while True:
-    event = pygame.event.wait()
+    event=pygame.event.wait()
     if event.type == QUIT:
         pygame.quit()
         exit()
