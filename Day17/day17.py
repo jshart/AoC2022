@@ -1,31 +1,75 @@
 
 # Importing the library
+from enum import Enum
 import pygame
 from pygame.locals import *
 
 
-class Sand:
-    def __init__(self, startX, startY):
-        self.x = startX
-        self.y = startY
+class JetPattern:
+    def __init__(self, instructions):
+        self.ins = instructions
+        self.index = 0
+        print("JetPattern initiatlised with length:{}".format(len(self.ins)))
 
-    def CheckNextMove(self, m):
-        if m[self.x][self.y+1] == 0:
-            self.y += 1
-            return True
-        elif m[self.x-1][self.y+1] == 0:
-            self.x -= 1
-            self.y += 1
-            return True
-        elif m[self.x+1][self.y+1] == 0:
-            self.x += 1
-            self.y += 1
-            return True
-        else:
-            return False
+    def getIns(self):
+        i=self.ins[self.index]
+        print("Ins [{}] at index:{}".format(i, self.index))
+        
+        self.index += 1
+        if self.index >= len(self.ins):
+            print("--> Instructions wrapping")
+            self.index=0
+
+        return i
+
+
+class Tetromino:
+    class TType(Enum):
+        HLINE=0
+        CROSS=1
+        BL=2
+        VLINE=3
+        BOX=4
+
+    # hLine = [1, 1, 1, 1]
+    # cross = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+    # bL = [[0, 0, 1], [0, 0, 1], [1, 1, 1]]
+    # vLine = [[1], [1], [1], [1]]
+    # box = [[1, 1], [1, 1]]
+
+    def __init__(self, type):
+        self.type=type
+
+    def getShape(self):
+        match self.type:
+            case Tetromino.TType.HLINE:
+                return [[1, 1, 1, 1]]
+            case Tetromino.TType.CROSS:
+                return [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+            case Tetromino.TType.BL:
+                return [[0, 0, 1], [0, 0, 1], [1, 1, 1]]
+            case Tetromino.TType.VLINE:
+                return [[1], [1], [1], [1]]
+            case Tetromino.TType.BOX:
+                return [[1, 1], [1, 1]]
+
+    def printShape(self):
+        print(self.getShape())
+
+    def printAsciiShape(self):
+        s=self.getShape()
+        y=len(s)
+        x=len(s[0])
+        for i in range(y):
+            for j in range(x):
+                if (s[i][j] == 1):
+                    print("#", end="")
+                else:
+                    print(".", end="")
+            print()
 
     def draw(self, scale):
-        c = (255, 255, 0)
+        c=(255, 255, 0)
         # draw the sand
         pygame.draw.rect(surface, c, pygame.Rect(
             self.x*scale, self.y*scale, scale, scale))
@@ -33,8 +77,8 @@ class Sand:
 
 def drawMap(scale, xmax, ymax, m):
 
-    rockColor = (125, 125, 125)
-    sandColor = (255, 255, 0)
+    rockColor=(125, 125, 125)
+    sandColor=(255, 255, 0)
 
     for x in range(xmax):
         for y in range(ymax):
@@ -49,125 +93,55 @@ def drawMap(scale, xmax, ymax, m):
                     x*scale, y*scale, scale, scale))
 
 
-def drawSource():
-    c = (255, 0, 0)
-    pygame.draw.rect(surface, c, pygame.Rect(500*scale, 0*scale, scale, scale))
-
-
-def buildRock(r, m):
-    # break rock out into start and end co-ord pairs
-    x = 0
-    y = 1
-    s = r[0]
-    e = r[1]
-
-    print("Building Rock: {} -> {}".format(r[0], r[1]))
-    # is the rock x or y aligned?
-    if s[x] == e[x]:
-        print("X aligned")
-        # X is same in both, so this segment is x aligned
-        if (e[y] > s[y]):
-            for i in range(s[y], e[y]+1):
-                m[s[x]][i] = 1
-        else:
-            for i in range(e[y], s[y]+1):
-                m[s[x]][i] = 1
-    else:
-        print("Y aligned")
-        # y aligned
-        if (e[x] > s[x]):
-            for i in range(s[x], e[x]+1):
-                m[i][s[y]] = 1
-        else:
-            for i in range(e[x], s[x]+1):
-                m[i][s[y]] = 1
-
-
 # Initializing Pygame and the font handler
 pygame.init()
 pygame.font.init()
-myFont = pygame.font.SysFont('Arial', 10)
+myFont=pygame.font.SysFont('Arial', 10)
 
 
 #### START OF DATA LOADING ####
-file1 = open('Day14/data/input.txt', 'r')
+file1=open('Day17/data/input_test.txt', 'r')
 
 # read file input.txt into an array of strings
-Lines = file1.readlines()
+lines=file1.readlines()
 
-rocks = []
 # loop through each line
-for line in Lines:
-    line = line.strip()
-
-    pairs = line.split(' -> ')
-    for c in range(len(pairs)-1):
-
-        x, y = map(int, pairs[c].split(','))
-        p = (x, y)
-
-        x2, y2 = map(int, pairs[c+1].split(','))
-        p2 = (x2, y2)
-
-        # print("{0} -> {1}".format(p, p2))
-
-        rocks.append((p, p2))
-
-# print(rocks)
+for line in lines:
+    line=line.strip()
+    print(line)
 
 
-# Lets initialise a map to sort our rocks and sand
-# we know the highest co-ords we need to deal with
-# are max x: 544, max y: 164. So lets round them up
-# to the nearest 100, and then create a blank
-# array of that size, so that we can just arbitarily
-# populate it as we process data
-x = 600
-y = 200
-map = []
-for i in range(x):
-    map.append([0 for j in range(y)])
+x=600
+y=200
+map=[]
 
-# print(map)
+shape=Tetromino(Tetromino.TType.HLINE)
+shape.printAsciiShape()
+shape=Tetromino(Tetromino.TType.CROSS)
+shape.printAsciiShape()
+shape=Tetromino(Tetromino.TType.BL)
+shape.printAsciiShape()
+shape=Tetromino(Tetromino.TType.VLINE)
+shape.printAsciiShape()
+shape=Tetromino(Tetromino.TType.BOX)
+shape.printAsciiShape()
 
-for r in rocks:
-    buildRock(r, map)
+ins=JetPattern(lines[0])
+
+for c in range(len(lines[0])*2):
+    i=ins.getIns()
+
 
 # setup the display, now we know how big we need it
-scale = 3
-surface = pygame.display.set_mode((scale*x, scale*y))
+scale=3
+surface=pygame.display.set_mode((scale*x, scale*y))
 
 
-count = 0
-done = False
-# keep pumping in sand
-while done == False:
-    testSand = Sand(500, 0)
-    active = True
+# surface.fill((0, 0, 0))
 
-    while active == True:
-        # pygame.time.wait(100)
+# drawMap(scale, x, y, map)
+# pygame.display.flip()
 
-        surface.fill((0, 0, 0))
-
-        drawMap(scale, x, y, map)
-        drawSource()
-
-        active = testSand.CheckNextMove(map)
-        if active:
-            testSand.draw(scale)
-            if (testSand.y > 190):
-                active = False
-                done = True
-        else:
-            map[testSand.x][testSand.y] = 2
-            count += 1
-            print("Count:{}".format(count))
-
-        # flip the display for double buffering
-        pygame.display.flip()
-
-print("Done")
 
 pygame.event.clear()
 while True:
