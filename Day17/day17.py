@@ -5,6 +5,18 @@ import pygame
 from pygame.locals import *
 
 
+class Moves(IntEnum):
+    BOTTOM=0
+    IGNORE=1
+    ALLOWED=2
+    COLLISION=3
+
+class Directions(IntEnum):
+    DOWN=0
+    RIGHT=1
+    LEFT=2
+
+# note board is laid out board[Y][X]
 class Board:
     def __init__(self, width, height, scale):
         self.width = width
@@ -13,6 +25,16 @@ class Board:
         self.left = 0
         self.top = 0
         self.scale = scale
+
+    def moveAllowed(self, newx, newy):
+        if newy>=self.height:
+            return Moves.BOTTOM
+        if newx<0 or newx >=self.width:
+            return Moves.IGNORE
+        if self.board[newy][newx]>0:
+            return Moves.COLLISION
+
+        return Moves.ALLOWED
 
     def asciiBoard(self):
         # print the board out
@@ -135,6 +157,28 @@ class Tetromino:
                 pygame.draw.rect(surface, cellBorder, pygame.Rect(
                     tx*scale, ty*scale, scale, scale), width=1)
 
+    def checkMove(self,cx,cy,board,direction):
+        s = self.getShape()
+
+        for y, row in enumerate(s):
+            for x, cell in enumerate(row):
+                # check each element in the Tetromino to see if
+                # hits anything
+                match direction:
+                    case Directions.DOWN:
+                        result=board.moveAllowed(cx+x,cy+y+1)
+                        if result==Moves.BOTTOM or result==Moves.COLLISION:
+                            return Moves.COLLISION
+                    case Directions.RIGHT:
+                        result=board.moveAllowed(cx+x+1,cy+y)
+                        if result==Moves.IGNORE or result==Moves.COLLISION:
+                            return Moves.IGNORE
+                    case Directions.LEFT:
+                        result=board.moveAllowed(cx+x-1,cy+y)
+                        if result==Moves.IGNORE or result==Moves.COLLISION:
+                            return Moves.IGNORE
+
+        return Moves.ALLOWED
 
 nextTetromino = TType.HLINE
 
@@ -204,6 +248,11 @@ for c in range(5):
     cycles = 0
 
     while cycles < y:
+
+        if shape.checkMove(2,cycles,board,Directions.DOWN)==Moves.COLLISION:
+            print("bottom hit at cycles={}".format(cycles))
+            break
+
         cycles += 1
 
         surface.fill((0, 0, 0))
