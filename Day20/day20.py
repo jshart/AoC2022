@@ -94,37 +94,45 @@ class Node:
     #     self.next = B
     #     B.prev = self
 
-    def findNodeNForward(self, n):
+    def findNodeNForward(self, n, skip):
         thisNode = self
         while n > 0:
             thisNode = thisNode.next
-            n -= 1
+            # we skip "ourselves" as we emulate that our node has been removed from the list
+            if thisNode==self and skip==True:
+                pass
+            else:
+                n -= 1
         return thisNode
 
-    def findNodeNBackward(self, n):
+    def findNodeNBackward(self, n, skip):
         thisNode = self
         n = abs(n)
         while n > 0:
             thisNode = thisNode.prev
-            n -= 1
+            # we skip "ourselves" as we emulate that our node has been removed from the list
+            if thisNode==self and skip==True:
+                pass
+            else:
+                n -= 1
         return thisNode
 
-    def findNodeNDistance(self, n):
+    def findNodeNDistance(self, n, skip):
         if n > 0:
-            return self.findNodeNForward(n)
+            return self.findNodeNForward(n, skip)
         else:
-            return self.findNodeNBackward(n)
+            return self.findNodeNBackward(n, skip)
 
-    def moveNodeNDistance(self, n):
+    def moveNodeNDistance(self, n, skip):
         if n > 0:
             # print("Moving forward {} nodes".format(n))
-            self.insertNodeAfter(self.findNodeNForward(n))
+            self.insertNodeAfter(self.findNodeNForward(n,skip))
         else:
             # we need to move one less in the backward direction, as it lets as
             # still treat it as a "move after"
             n -= 1
             # print("Moving backwards {} nodes".format(n))
-            self.insertNodeAfter(self.findNodeNBackward(n))
+            self.insertNodeAfter(self.findNodeNBackward(n,skip))
 
 
 print("### PARSING PROGRAM ###")
@@ -166,7 +174,19 @@ print("### STARTING PROGRAM Static Index len={} ###".format(len(staticIndex)))
 
 for c, i in enumerate(staticIndex):
     thisNode = i[1]
-    print("Shuffle Round:{} for value:{}".format(c, thisNode.data))
+
+    
+    # right - this is complicated, but you can reduce the looping significantly by using
+    # modulus for the length of the array as any lengths longer than that are circuling
+    # though the whole list and not doing anything useful. We only need to consider the
+    # remainder. We do need to deal with signs -/+ correctly, and we nened to remove one
+    # each loop we skipping because we need to act like we've "removed" the node we've
+    # moving from the list
+    r = abs(thisNode.data) % (len(staticIndex)-1)
+    if thisNode.data <0:
+        r=-r
+
+    print("Shuffle Round:{} for value:{} reduced to:{}".format(c, thisNode.data), r)
     if i[0] != 0:
 
         # performance optimisation - if its longer than the list size, we can reduce it by
@@ -175,7 +195,7 @@ for c, i in enumerate(staticIndex):
         # if i[0] > 5000:
         #     thisNode.moveNodeNDistance(i[0]-5000)
         # else:
-        thisNode.moveNodeNDistance(i[0])
+        thisNode.moveNodeNDistance(r,True)
 
         # r=i[0] % len(staticIndex)
         # thisNode.moveNodeNDistance(r)
@@ -212,13 +232,13 @@ for c, i in enumerate(staticIndex):
 
 sum = 0
 print("Found zero at position [{}]".format(c))
-n = i[1].findNodeNForward(1000)
+n = i[1].findNodeNForward(1000,False)
 sum += n.data
 print("Found 1000 nodes forward of zero:{}".format(n.data))
-n = i[1].findNodeNForward(2000)
+n = i[1].findNodeNForward(2000,False)
 sum += n.data
 print("Found 2000 nodes forward of zero:{}".format(n.data))
-n = i[1].findNodeNForward(3000)
+n = i[1].findNodeNForward(3000,False)
 sum += n.data
 print("Found 3000 nodes forward of zero:{}".format(n.data))
 
