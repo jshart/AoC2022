@@ -1,15 +1,12 @@
 # read file input.txt into an array of strings
-file1 = open('Day20/data/input_test.txt', 'r')
+file1 = open('Day20/data/input.txt', 'r')
 lines = file1.readlines()
 
 staticIndex = []
 
+key=811589153
+
 # create a linked list class with forward and backward points
-# TODO: Need to make this looped (tail->head)
-# TODO: Need to make it circular listed safe
-
-# 1650 is too low? (probably not negative)
-
 class Node:
     def __init__(self, value):
         self.data = value
@@ -140,7 +137,7 @@ print("### PARSING PROGRAM ###")
 for line in lines:
     line = line.strip()
     print(line)
-    staticIndex.append(int(line))
+    staticIndex.append(int(line)*key)
 
 # Build the linked list from the input data, and geneate a direct
 # access index that allows us to connect to a node based on its *original*
@@ -172,40 +169,27 @@ print("### STARTING PROGRAM Static Index len={} ###".format(len(staticIndex)))
 # staticIndex[0][1].printNValuesFromHere(len(staticIndex))
 # print()
 
-for c, i in enumerate(staticIndex):
-    thisNode = i[1]
 
-    
-    # right - this is complicated, but you can reduce the looping significantly by using
-    # modulus for the length of the array as any lengths longer than that are circuling
-    # though the whole list and not doing anything useful. We only need to consider the
-    # remainder. We do need to deal with signs -/+ correctly, and we nened to remove one
-    # each loop we skipping because we need to act like we've "removed" the node we've
-    # moving from the list
-    r = abs(thisNode.data) % (len(staticIndex)-1)
-    if thisNode.data <0:
-        r=-r
+# main decode loop
+for j in range(10):
+    for c, i in enumerate(staticIndex):
+        thisNode = i[1]
 
-    print("Shuffle Round:{} for value:{} reduced to:{}".format(c, thisNode.data, r))
-    if i[0] != 0:
+        
+        # right - this is complicated, but you can reduce the looping significantly by using
+        # modulus for the length of the array as any lengths longer than that are circuling
+        # though the whole list and not doing anything useful. We only need to consider the
+        # remainder. We do need to deal with signs -/+ correctly, and we nened to remove one
+        # each loop we skipping because we need to act like we've "removed" the node we've
+        # moving from the list
+        r = abs(thisNode.data) % (len(staticIndex)-1)
+        if thisNode.data <0:
+            r=-r
 
-        # performance optimisation - if its longer than the list size, we can reduce it by
-        # the list size as the first 5000 moves does one complete move and we end up where we
-        # are anyway
-        # if i[0] > 5000:
-        #     thisNode.moveNodeNDistance(i[0]-5000)
-        # else:
-        thisNode.moveNodeNDistance(r,True)
+        print("Shuffle Round:{} for value:{} reduced to:{}".format(c, thisNode.data, r))
+        if i[0] != 0:
+            thisNode.moveNodeNDistance(r,True)
 
-        # r=i[0] % len(staticIndex)
-        # thisNode.moveNodeNDistance(r)
-
-
-        # print("Executing move for:", end='')
-        # thisNode.printThisNode()
-        # print("State after move:", end='')
-        # thisNode.printNValuesFromHere(len(staticIndex))
-        # print()
 
 # sanity check
 errorFound = False
