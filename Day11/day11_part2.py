@@ -2,6 +2,8 @@
 file1 = open('Day11/data/input.txt', 'r')
 lines = file1.readlines()
 
+key = 3*13*2*11*5*17*19*7
+
 
 class Monkey:
     def __init__(self, raw):
@@ -63,18 +65,17 @@ class Monkey:
                 item *= rhs
 
         # reduce the worry level now that its been inspected
-        #item = int(item/3)
+        # item = int(item/3)
+        item = item % key
 
         # now lets perform the test
         if item % self.test == 0:
             # divisible
             monkeys[self.ifTrue].items.append(item)
-            print("Monkey {} throwing {} to Monkey {}".format(
-                self.monkeyNumber, item, self.ifTrue))
+            #print("Monkey {} throwing {} to Monkey {}".format(self.monkeyNumber, item, self.ifTrue))
         else:
             monkeys[self.ifFalse].items.append(item)
-            print("Monkey {} throwing {} to Monkey {}".format(
-                self.monkeyNumber, item, self.ifFalse))
+            #print("Monkey {} throwing {} to Monkey {}".format(self.monkeyNumber, item, self.ifFalse))
 
 
 print("### PARSING PROGRAM ###")
@@ -92,6 +93,8 @@ for line in lines:
 
 monkeys.append(Monkey(raw.copy()))
 
+print("Key: {}".format(key))
+
 
 for m in monkeys:
     m.printRaw()
@@ -99,7 +102,7 @@ for m in monkeys:
 
 
 print("### STARTING GAME ###")
-for i in range(20):
+for i in range(10000):
     print("### ROUND = {}".format(i))
     for m in monkeys:
         while len(m.items) > 0:
