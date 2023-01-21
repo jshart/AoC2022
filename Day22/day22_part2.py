@@ -1,3 +1,18 @@
+# 177202 is too low?
+
+# answer;
+# 182   (row)
+# 42    (col)
+# 2     (dir)
+# 182170
+
+# # my results;
+# *** Instructions completed
+# \-- Final location:50,177 - Direction:2
+# \-- Row P:177000 Col P:200
+# \--- Final RESULT:177202
+
+# error delta is 5*1000 - 4*8 == 4968
 
 import sys
 from pygame.locals import *
@@ -77,6 +92,9 @@ class Portals:
             else:
                 pygame.draw.rect(surface, (255, 0, 0), pygame.Rect(x, y, w, h))
 
+    def drawLabels(self, surface, scale):
+        for edge in self.edges:
+
             # You can use `render` and then blit the text surface ...
             text_surface = myFont.render(
                 edge[0]+" "+edge[3], False, (0, 0, 0), (255, 255, 255))
@@ -88,10 +106,11 @@ class Portals:
 
 
 # Overall dimensioning and limits - dial these based on display size etc
-maxYDraw = 5
+scale = 5
+
+# these get reset by the file load, so these are just defaults
 maxX = 7
 maxY = 40
-scale = 5
 
 
 class Directions(IntEnum):
@@ -202,7 +221,7 @@ class Player:
         if board.board[pY][pX] == ' ':
             print("*-- ERROR - trying to move into open space at:{}".format([pX,pY]))
         elif board.board[pY][pX] == '#':
-            print("*-- Stopping because of block")
+            #print("*-- Stopping because of block, proposed position was {} direction {}".format([pX,pY],newDirection))
             return False
         
         # if we didnt return above, then we're ok to continue moving
@@ -219,90 +238,17 @@ class Player:
         if self.outstandingMoves <= 0:
             return
 
-        # lets check to see what the proposed position would entail
-        delta = self.proposedMoveDelta()
-        pX = self.x+delta[0]
-        pY = self.y+delta[1]
-
-        loopX = False
-        loopY = False
-        stopMoving = False
-
-        # if we're moving in the X direction and we'd either
-        # go off screen or we'd move to space, then we should
-        # look to loop instead
-        if delta[0] != 0:
-            # if pX < 0 or pX >= maxX-1:
-            #     #print("*-- looping because of screen")
-            #     loopX=True
-            if board.board[pY][pX] == ' ':
-                # print("*-- looping because of space")
-                loopX = True
-            elif board.board[pY][pX] == '#':
-                # print("*-- Stopping because of block")
-                stopMoving = True
-
-        # Run the same moves for the Y direction
-        if delta[1] != 0:
-            # if pY < 0 or pY >= maxY-1:
-            #     loopY=True
-            if board.board[pY][pX] == ' ':
-                loopY = True
-            elif board.board[pY][pX] == '#':
-                stopMoving = True
-
-        if loopX == True:
-            # print("|-- Looking to Loop X")
-            if delta[0] > 0:  # trying to move right
-                # search for a '.' spot starting from the left
-                searchStart = [0, self.y]
-                while (board.board[searchStart[1]][searchStart[0]] == ' '):
-                    searchStart[0] += 1
-                if board.board[searchStart[1]][searchStart[0]] == '#':
-                    stopMoving = True
-
-            elif delta[0] < 0:  # trying to move left
-                # search for a '.' spot starting from the right
-                searchStart = [maxX-1, self.y]
-                while (board.board[searchStart[1]][searchStart[0]] == ' '):
-                    searchStart[0] -= 1
-                if board.board[searchStart[1]][searchStart[0]] == '#':
-                    stopMoving = True
-
-        if loopY == True:
-            # print("|-- Looking to Loop Y")
-            if delta[1] > 0:  # trying to move down
-                # search for a '.' spot starting from the top
-                searchStart = [self.x, 0]
-                while (board.board[searchStart[1]][searchStart[0]] == ' '):
-                    searchStart[1] += 1
-                if board.board[searchStart[1]][searchStart[0]] == '#':
-                    stopMoving = True
-
-            elif delta[1] < 0:  # trying to move up
-                # search for a '.' spot starting from the bottom
-                searchStart = [self.x, maxY-1]
-                while (board.board[searchStart[1]][searchStart[0]] == ' '):
-                    searchStart[1] -= 1
-                if board.board[searchStart[1]][searchStart[0]] == '#':
-                    stopMoving = True
-
-        if stopMoving == True:
+        result = self.testMove(board, portals)
+ 
+        # NOTE: we could do this directly inside testmove
+        if result == False:
             # print("|-- Obstruction, stopping moves")
             # we've hit an obstruction, so we can't move any further - discard the rest of the movement
             self.outstandingMoves = 0
-        elif loopX == True or loopY == True:
-            # print("|-- Looping to new location {}".format(searchStart))
-            self.x = searchStart[0]
-            self.y = searchStart[1]
-            self.outstandingMoves -= 1
-            board.heatMap.update(self.x, self.y)
         else:
-            # print("|-- Moving delta:{} outstanding:{}".format(delta,self.outstandingMoves))
-            self.x += delta[0]
-            self.y += delta[1]
-            self.outstandingMoves -= 1
-            board.heatMap.update(self.x, self.y)
+            self.outstandingMoves-=1
+            board.heatMap.update(self.x,self.y)
+
 
     def draw(self, surface, scale):
         playerBorder = (125, 125, 125)
@@ -412,11 +358,11 @@ class Board:
                     # pygame.draw.rect(surface, cellBorder, pygame.Rect(
                     #     x*self.scale, y*self.scale, self.scale, self.scale), width=1)
                 elif (cell == '.'):
-                    pygame.draw.rect(surface, blankCell, pygame.Rect(
-                        x*self.scale, y*self.scale, self.scale, self.scale))
                     # pygame.draw.rect(surface, cellBorder, pygame.Rect(
                     #     x*self.scale, y*self.scale, self.scale, self.scale), width=1)
                     pass
+                else:
+                    pygame.draw.rect(surface, blankCell, pygame.Rect(x*self.scale, y*self.scale, self.scale, self.scale))
 
             # You can use `render` and then blit the text surface ...
             # text_surface = myFont.render(str(y), False, (255, 255, 255))
@@ -517,7 +463,7 @@ maxMoves = 100
 
 # while passes <= maxMoves and instructions.finished()==False:
 while instructions.finished() == False or player.outstandingMoves > 0:
-    pygame.time.wait(500)
+    #pygame.time.wait(100)
 
     # We only want to fetch another instruction and process it - *if*
     # we've got no move steps to execute.
@@ -540,24 +486,15 @@ while instructions.finished() == False or player.outstandingMoves > 0:
 
     player.move(map, portals)
 
-    e = portals.testInPortal(player.x, player.y)
-    if e != None:
-        print("Direction: {} Entering portal:{} pos:{}".format(
-            Directions.directionToPortal(player.direction), e, [player.x, player.y]))
-        pos=portals.posInPortal(e, player.x, player.y)
-        print("|- Pos in Portal: {}".format(pos))
-        partnerEdge=portals.getPartnerPortal(e[0])
-        print("|- Partner portal:{}".format(partnerEdge))
-        print("|- proposed new position:{}".format(portals.jumpToPartner(partnerEdge,pos)))
-
-    # print("|-- Latest Direction:{}".format(Directions(player.direction).name))
     if passes % 100 == 0:
         print("\== PASS {} complate".format(passes))
 
     surface.fill((0, 0, 0))
-    map.draw(surface)
     portals.draw(surface, scale)
+    map.draw(surface)
     player.draw(surface, map.scale)
+    portals.drawLabels(surface, scale)
+
     pygame.display.flip()
 
     passes += 1
