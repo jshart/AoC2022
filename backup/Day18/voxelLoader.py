@@ -33,22 +33,22 @@ class VoxelLoader:
 
             self.coordsList.append(self.coords)
 
-        self.maxx += 3
-        self.maxy += 3
-        self.maxz += 3
+        self.maxx += 1
+        self.maxy += 1
+        self.maxz += 1
         print("maxx:", self.maxx)
         print("maxy:", self.maxy)
         print("maxz:", self.maxz)
 
         # create a 3 dimensional array sized maxx,maxy,maxz
-        self.space = [[['.' for z in range(self.maxz)] for y in range(self.maxy)]
-                for x in range(self.maxx)]
+        self.space = [[['.' for z in range(self.maxz+1)] for y in range(self.maxy+1)]
+                for x in range(self.maxx+1)]
         print("L1:{}".format(len(self.space)))
         print("L2:{}".format(len(self.space[0])))
         print("L3:{}".format(len(self.space[0][0])))
 
         for c in self.coordsList:
-            self.space[c[0]+1][c[1]+1][c[2]+1] = '#'
+            self.space[c[0]][c[1]][c[2]] = '#'
 
     def printVoxels(self):
         for x in range(self.maxx):
@@ -62,7 +62,7 @@ class VoxelLoader:
 if __name__ == "__main__":
     print("File executed directly")
 
-v = VoxelLoader('Day18/data/input.txt')
+v = VoxelLoader('Day18/data/input_test.txt')
 v.loadFile()
 v.parseFile()
 v.printVoxels()
