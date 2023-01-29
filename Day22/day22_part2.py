@@ -14,30 +14,56 @@
 
 # error delta is 5*1000 - 4*8 == 4968
 
+#\== PASS 15100 complate
+#*-- ERROR - trying to move into open space at:[1, 201]
+
 import sys
 from pygame.locals import *
 import pygame
 from enum import IntEnum
 
+# A	=
+# B	~
+# C	=
+# D	=
+# E	~
+# F	=
+# G	=
+
 
 class Portals:
     def __init__(self):
 
-        # Portal name, start range, end range, exit, entrance
-        self.edges = [['A',  [101, 50],  [150, 50], 'v', '^'],
-                      ['B',  [150, 1],   [150, 50], '>', '<'],
-                      ['C',  [101, 1],   [150, 1], '^', 'v'],
-                      ['D',  [51, 1],    [100, 1], '^', 'v'],
-                      ['E',  [51, 1],    [51, 50], '<', '>'],
-                      ['F',  [51, 51],   [51, 100], '<', '>'],
-                      ['F2', [1, 101],   [50, 101], '^', 'v'],
-                      ['E2', [1, 101],   [1, 150], '<', '>'],
-                      ['D2', [1, 151],   [1, 200], '<', '>'],
-                      ['C2', [1, 200],   [50, 200], 'v', '^'],
-                      ['G2', [50, 151],  [50, 200], '>', '<'],
-                      ['G',  [51, 150],  [100, 150], 'v', '^'],
-                      ['B2', [100, 101], [100, 150], '>', '<'],
-                      ['A2', [100, 51],  [100, 100], '>', '<']]
+        # Portal name, start range, end range, exit, entrance, invert-flag
+        self.edges = [['A',  [101, 50],  [150, 50], 'v', '^',0],
+                      ['B',  [150, 1],   [150, 50], '>', '<',1],
+                      ['C',  [101, 1],   [150, 1],  '^', 'v',0],
+                      ['D',  [51, 1],    [100, 1],  '^', 'v',0],
+                      ['E',  [51, 1],    [51, 50],  '<', '>',1],
+                      ['F',  [51, 51],   [51, 100], '<', '>',0],
+                      ['F2', [1, 101],   [50, 101], '^', 'v',0],
+                      ['E2', [1, 101],   [1, 150],  '<', '>',1],
+                      ['D2', [1, 151],   [1, 200],  '<', '>',0],
+                      ['C2', [1, 200],   [50, 200], 'v', '^',0],
+                      ['G2', [50, 151],  [50, 200], '>', '<',0],
+                      ['G',  [51, 150],  [100, 150],'v', '^',0],
+                      ['B2', [100, 101], [100, 150],'>', '<',1],
+                      ['A2', [100, 51],  [100, 100],'>', '<',0]]
+
+        # self.edges =   [['A',[9,1],[12,1],'^','v',1],
+        #                 ['B',[9,1],[9,4],'<','>',0],
+        #                 ['C',[12,1],[12,4],'>','<',1],
+        #                 ['D',[12,5],[12,8],'>','<',1],
+        #                 ['E',[5,8],[8,8],'v','^',1],
+        #                 ['F',[9,12],[12,12],'v','^',1],
+        #                 ['G',[13,12],[16,12],'v','^',1],
+        #                 ['A2',[1,5],[4,5],'^','v',1],
+        #                 ['B2',[5,5],[8,5],'^','v',0],
+        #                 ['C2',[16,9],[16,12],'>','<',1],
+        #                 ['D2',[13,9],[16,9],'^','v',1],
+        #                 ['E2',[9,9],[9,12],'<','>',1],
+        #                 ['F2',[1,8],[4,8],'v','^',1],
+        #                 ['G2',[1,5],[1,8],'<','>',1]]
 
     def getPartnerPortal(self, portalName):
         if len(portalName) == 1:
@@ -50,14 +76,15 @@ class Portals:
                 return edge
         return None
 
-    def testInPortal(self, x, y):
+    def testInPortal(self, x, y, direction):
         for edge in self.edges:
-            if x >= edge[1][0] and x <= edge[2][0] and y >= edge[1][1] and y <= edge[2][1]:
+            if x >= edge[1][0] and x <= edge[2][0] and y >= edge[1][1] and y <= edge[2][1] and Directions.portalToDirection(edge[3]) == direction:
                 return edge
         return None
 
     def posInPortal(self, e, x, y):
         # is this portal horizontal or vertical?
+        # if the 2 y values are the same, then we must be aligned horizontally
         if e[1][1] == e[2][1]:
             # horizontal
             pos = x-min(e[1][0], e[2][0])
@@ -66,26 +93,47 @@ class Portals:
             pos = y-min(e[1][1], e[2][1])
         return (pos)
 
+    # TODO: fix this code - need to work out a generic way to 
+    # map a portal offset on this side to the appropriate transformation
+    # on the other side. This appears to be too simple, and broken.
     def jumpToPartner(self, partnerEdge, offset):
         e=partnerEdge
-        if e[1][1] == e[2][1]:
-            # horizontal
-            pos = min(e[1][0], e[2][0]) + offset
-            return [pos, e[1][1]]
+        
+        # for some portals we need to invert the offset, others we leave to map
+        # directly, the 5th field in the edge is a flag to indicate if we need to
+        # invert or not (1==invert, 0==no invert)
+        if e[5]==1:
+            # is this portal horizontal or vertical?
+            # if the 2 y values are the same, then we must be aligned horizontally
+            if e[1][1] == e[2][1]:
+                # horizontal
+                pos = max(e[1][0], e[2][0]) - offset
+                return [pos, e[1][1]]
+            else:
+                # vertical
+                pos = max(e[1][1], e[2][1]) - offset
+                return [e[1][0], pos]
         else:
-            # vertical
-            pos = min(e[1][1], e[2][1]) + offset
-            return [e[1][0], pos]
+            # is this portal horizontal or vertical?
+            # if the 2 y values are the same, then we must be aligned horizontally
+            if e[1][1] == e[2][1]:
+                # horizontal
+                pos = min(e[1][0], e[2][0]) + offset
+                return [pos, e[1][1]]
+            else:
+                # vertical
+                pos = min(e[1][1], e[2][1]) + offset
+                return [e[1][0], pos]
 
     def draw(self, surface, scale):
         for edge in self.edges:
             x = edge[1][0]*scale
             y = edge[1][1]*scale
-            w = abs(edge[2][0]-edge[1][0])*scale
-            h = abs(edge[2][1]-edge[1][1])*scale
+            w = abs((edge[2][0]-edge[1][0])+1)*scale
+            h = abs((edge[2][1]-edge[1][1])+1)*scale
 
-            w = w if w > 0 else scale
-            h = h if h > 0 else scale
+            # w = w if w > 0 else scale
+            # h = h if h > 0 else scale
 
             if len(edge[0]) == 1:
                 pygame.draw.rect(surface, (0, 0, 255), pygame.Rect(x, y, w, h))
@@ -189,37 +237,40 @@ class Player:
         pY = self.y+delta[1]
         newDirection = self.direction
 
-        # are we already inside a portal zone?
-        e = portals.testInPortal(player.x, player.y)
+        # are we already inside a portal zone and travelling in the direction to pass through the portal?
+        e = portals.testInPortal(player.x, player.y, self.direction)
         if e != None:
-            # we're in a portal - test to see if the direction
-            # of travel would move us through the portal?
-            if Directions.portalToDirection(e[3]) == self.direction:
-                # we are travelling in the direction that the portal
-                # faces, so we should move through the portal and reset
-                # the direction to the new location
+            # we are travelling in the direction that the portal
+            # faces, so we should move through the portal and reset
+            # the direction to the new location
 
-                print("Direction: {} Entering portal:{} pos:{}".format(Directions.directionToPortal(player.direction), e, [player.x, player.y]))
-   
-                # work out our relative position inside the portal
-                pos=portals.posInPortal(e, player.x, player.y)
-                print("|- Pos in Portal: {}".format(pos))
-                # work out what the partner portal is
-                partnerEdge=portals.getPartnerPortal(e[0])
-                print("|- Partner portal:{}".format(partnerEdge))
-                # given the portal offset and the partner portal lets wrok out the new location
-                newLocation= portals.jumpToPartner(partnerEdge,pos)
-                print("|- proposed new position:{}".format(newLocation))
-                pX = newLocation[0]
-                pY = newLocation[1]
+            print("Direction: {} Entering portal:{} pos:{}".format(Directions.directionToPortal(player.direction), e, [player.x, player.y]))
 
-                newDirection = Directions.portalToDirection(partnerEdge[4])
+            # work out our relative position inside the current portal
+            pos=portals.posInPortal(e, player.x, player.y)
+            print("|- Pos in Portal: {}".format(pos))
+
+            # work out what edge the partner portal is
+            partnerEdge=portals.getPartnerPortal(e[0])
+            print("|- Partner portal:{}".format(partnerEdge))
+
+            # given this portal offset and the partner portal lets work out the new location
+            newLocation= portals.jumpToPartner(partnerEdge,pos)
+            print("|- proposed new position:{}".format(newLocation))
+            pX = newLocation[0]
+            pY = newLocation[1]
+
+            # when we move through the portal to the new edge our direction needs to update
+            # to compensate for the "rotation" of moving around the cube
+            newDirection = Directions.portalToDirection(partnerEdge[4])
 
         # we've calculated the proposed move. Now we need to check if that destination position
         # is a blocker - if so we ignore and end the move, otherwise we lock in the proposed
         # new position
         if board.board[pY][pX] == ' ':
             print("*-- ERROR - trying to move into open space at:{}".format([pX,pY]))
+            exit
+            return False
         elif board.board[pY][pX] == '#':
             #print("*-- Stopping because of block, proposed position was {} direction {}".format([pX,pY],newDirection))
             return False
@@ -252,7 +303,7 @@ class Player:
 
     def draw(self, surface, scale):
         playerBorder = (125, 125, 125)
-        playerContent = (0, 255, 0)
+        playerContent = (0, 255, 255)
         x = self.x
         y = self.y
         pygame.draw.rect(surface, playerContent, pygame.Rect(
@@ -460,10 +511,11 @@ map.draw(surface)
 player.draw(surface, map.scale)
 pygame.display.flip()
 maxMoves = 100
+redraw=True
 
 # while passes <= maxMoves and instructions.finished()==False:
 while instructions.finished() == False or player.outstandingMoves > 0:
-    #pygame.time.wait(100)
+    #pygame.time.wait(500)
 
     # We only want to fetch another instruction and process it - *if*
     # we've got no move steps to execute.
@@ -474,7 +526,7 @@ while instructions.finished() == False or player.outstandingMoves > 0:
         # if currentInstruction==None:
         #     break
 
-        # print("Execute Instruction:{} count:{}".format(currentInstruction,instructions.count))
+        #print("Execute Instruction:{} count:{}".format(currentInstruction,instructions.count))
         if currentInstruction == 'R':
             # print("|-- Right turn")
             player.turnRight()
@@ -484,16 +536,26 @@ while instructions.finished() == False or player.outstandingMoves > 0:
         else:
             player.outstandingMoves = int(currentInstruction)
 
+            #pygame.time.wait(400)
+
     player.move(map, portals)
 
     if passes % 100 == 0:
         print("\== PASS {} complate".format(passes))
+        redraw=True
 
-    surface.fill((0, 0, 0))
-    portals.draw(surface, scale)
-    map.draw(surface)
-    player.draw(surface, map.scale)
-    portals.drawLabels(surface, scale)
+    # 16600 is the last block of 100 - so setting this to 16600 will avoid most draws until the end
+    if passes> 16600:
+        #print("DB: player Pos:{} direction:{}".format([player.x,player.y],player.direction))
+        redraw=True
+
+    if redraw==True:
+        surface.fill((0, 0, 0))
+        portals.draw(surface, scale)
+        map.draw(surface)
+        player.draw(surface, map.scale)
+        portals.drawLabels(surface, scale)
+        redraw=False
 
     pygame.display.flip()
 
@@ -518,7 +580,7 @@ colp=col*4
 print("\-- Row P:{} Col P:{}".format(rowp, colp))
 
 # The final password is the sum of 1000 times the row, 4 times the column, and the facing.
-password=(row*1000)+(4*col)+dirValue
+password=rowp+colp+dirValue
 print("\--- Final RESULT:{}".format(password))
 
 # pygame.event.get() is what I need to do an "instant" poll;
